@@ -23,8 +23,8 @@ class UsersController extends Controller
         $campos = [
             'users.id as id',
             DB::raw("CONCAT_WS(' ', nombre, apellido_paterno, apellido_materno) as nombre"),
-            'telefono',
-            'email',
+            'telefono as celular',
+            'email as correo_electronico',
             'roles.name as role',
             'users.deleted_at'
         ];
@@ -32,7 +32,7 @@ class UsersController extends Controller
         $queryBuilder = $deleted ? User::onlyTrashed() : User::withoutTrashed();
 
 
-        $queryBuilder->select($campos)
+      /*  $queryBuilder->select($campos)
             ->join('role_users', 'role_users.user_id', '=', 'users.id')
             ->join('roles', 'roles.id', '=', 'role_users.role_id')
             ->orderBy($orderBy, $order);
@@ -52,7 +52,45 @@ class UsersController extends Controller
 
 
         return response()->success(['data' => $data]);
-    }
+
+      */
+
+
+
+
+        $queryBuilder = $queryBuilder->select($campos)
+            ->join('role_users', 'users.id', '=', 'role_users.user_id')
+            ->join('roles', 'role_users.role_id', '=', 'roles.id')
+            ->orderBy($orderBy, $order);
+
+
+
+            if($query = $request->input('query', false))
+
+            {
+
+                $queryBuilder->where(function ($q) use ($query) {
+                    $q->where('users.nombre', 'like' , "%{$query}%")
+                    ->orWhere('email','like',"%{$query}%");
+                });
+
+
+            }
+
+            if($perpage = request()->input('perpage', false))
+
+            {
+
+                $data = $queryBuilder->paginate($perpage);
+
+
+
+            } else {
+                $data = $queryBuilder->get();
+            }
+            return response()->success($data);
+      }
+
 
     public function store(UsersRequest $request)
     {
@@ -115,7 +153,7 @@ class UsersController extends Controller
             return response()->success($user);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->unprocessable('Error', ['Error al actualizar el usuario.']);
+            return response()->unprocessable('Error', [$e->getMessage()]);
         }
     }
 
