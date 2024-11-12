@@ -32,32 +32,6 @@ class UsersController extends Controller
         $queryBuilder = $deleted ? User::onlyTrashed() : User::withoutTrashed();
 
 
-      /*  $queryBuilder->select($campos)
-            ->join('role_users', 'role_users.user_id', '=', 'users.id')
-            ->join('roles', 'roles.id', '=', 'role_users.role_id')
-            ->orderBy($orderBy, $order);
-
-        if ($query = $request->get('query', false)) {
-            $queryBuilder->where(function ($q) use ($query) {
-                $q->where('nombre', 'like', '%' . $query . '%');
-            });
-        }
-
-
-        if ($perPage = $request->input('perPage', false)) {
-            $data = $queryBuilder->paginate($perPage);
-        } else {
-            $data = $queryBuilder->get();
-        }
-
-
-        return response()->success(['data' => $data]);
-
-      */
-
-
-
-
         $queryBuilder = $queryBuilder->select($campos)
             ->join('role_users', 'users.id', '=', 'role_users.user_id')
             ->join('roles', 'role_users.role_id', '=', 'roles.id')
@@ -98,7 +72,6 @@ class UsersController extends Controller
 
         DB::beginTransaction();
         try {
-
             $credentials = [
                 'email' => $data['email'],
                 'password' => bcrypt($data['password']),
@@ -117,10 +90,10 @@ class UsersController extends Controller
 
             $role = Role::query()->find($data['role_id']);
 
-            RoleUser::query()->create([
-                'user_id' => $user->id,
-                'role_id' => $role->id
-            ]);
+
+            $role = Sentinel::findRoleByName($role->name);
+            $role->users()->attach($user->id);
+
 
 
             DB::commit();
