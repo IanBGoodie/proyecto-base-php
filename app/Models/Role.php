@@ -14,7 +14,6 @@ class Role extends Model
 
     protected $fillable = [
         'slug',
-        'name',
-        'permissions'
+        'name'
     ];
 }

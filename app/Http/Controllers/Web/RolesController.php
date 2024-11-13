@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RolesRequest;
 use App\Models\Role;
-use Cartalyst\Sentinel\Sentinel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Cartalyst\Sentinel\Laravel\Facades\Sentinel;
 
 
 class RolesController extends Controller
@@ -47,30 +47,64 @@ class RolesController extends Controller
         return response()->json(['data' => $role]);
     }
 
+public function update(RolesRequest $request, $id)
+{
+    $data = $request->validated();
+
+    DB::beginTransaction();
+
+    try {
+
+        $role = Sentinel::getRoleRepository()->find($id);
+
+
+        if (!$role) {
+            return response()->json(['success' => false, 'message' => 'Role not found'], 404);
+        }
+
+
+        $role->slug = $data['slug'];
+        $role->name = $data['name'];
+        $role->permissions = $data['permissions'];
+        $role->save();
+
+        DB::commit();
+
+        return response()->json(['success' => true, 'data' => $role], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json(['success' => false, 'message' => 'Fallo la actualizacion del rol', 'error' => $e->getMessage()], 500);
+    }
+}
 
     public function store(RolesRequest $request)
+
     {
         $data = $request->validated();
+
+        DB::beginTransaction();
+
         try {
 
             $roleData = [
                 'slug' => $data['slug'],
                 'name' => $data['name'],
-                'permissions' => $data['permissions']
             ];
 
 
-            $role = Sentinel::registerAndActivate($roleData);
+            $role = Sentinel::getRoleRepository()->create($roleData);
+
 
 
             DB::commit();
 
-            return response()->success($role);
+            return response()->json(['success' => true, 'data' => $role], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->unprocessable('Error', ['Error al crear el rol']);
+            return response()->json(['success' => false, 'message' => 'Role creation failed', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function destroy($id)
     {

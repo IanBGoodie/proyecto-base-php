@@ -22,18 +22,18 @@ class RolesRequest extends FormRequest
             $id = $params["role"];
 
             return [
-                "role" => "required|string|unique:roles,id,$id",
+                "name" => "required|string|unique:roles,id,$id",
                 "slug" => "required|string|unique:roles,slug,{$id}",
-                "permissions" => "required|array",
+                "permissions" => "nullable|string",
             ];
 
 
 
         } else {
             return [
-            "role" => "required|string|unique:roles",
+            "name" => "required|string|unique:roles",
             "slug" => "required|string|unique:roles",
-            "permissions" => "required|array",
+            "permissions" => "nullable|string",
             ];
         }
 
